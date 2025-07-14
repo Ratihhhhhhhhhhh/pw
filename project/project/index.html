@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Halaman Login Pilih Role</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    h2, h3 { text-align: center; margin-top: 0; }
+    .button-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    button {
+      padding: 12px;
+      font-size: 16px;
+      background-color: #87CEEB;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover { background-color: #00bfff; }
+    .form-box {
+      display: none;
+      margin-top: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <div id="roleSelection">
+      <h2>Login Sebagai:</h2>
+      <div class="button-container">
+        <button onclick="showForm('user')">Login User</button>
+        <button onclick="showForm('admin')">Login Admin</button>
+      </div>
+    </div>
+
+    <div id="userForm" class="form-box">
+      <h3>Login User</h3>
+      <form onsubmit="return loginUser(event)">
+        <label>Username:</label>
+        <input type="text" id="userUsername" required />
+        <label>Password:</label>
+        <input type="password" id="userPassword" required />
+        <button type="submit">Login</button>
+      </form>
+    </div>
+
+    <div id="adminForm" class="form-box">
+      <h3>Login Admin</h3>
+      <form onsubmit="return loginAdmin(event)">
+        <label>Username:</label>
+        <input type="text" id="adminUsername" required />
+        <label>Password:</label>
+        <input type="password" id="adminPassword" required />
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const supabase = window.supabase.createClient(
+    'https://oluiadcgamtarvxglwvi.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdWlhZGNnYW10YXJ2eGdsd3ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5OTc5MDMsImV4cCI6MjA2NjU3MzkwM30.0wAayKThZxfboiKmidQskSRBMmqGJus5wJ1BrxUsPQU'
+  );
+
+  function showForm(role) {
+    document.getElementById('roleSelection').style.display = 'none';
+    document.getElementById('userForm').style.display = 'none';
+    document.getElementById('adminForm').style.display = 'none';
+
+    if (role === 'user') {
+      document.getElementById('userForm').style.display = 'block';
+    } else if (role === 'admin') {
+      document.getElementById('adminForm').style.display = 'block';
+    }
+  }
+
+  async function loginUser(e) {
+    e.preventDefault();
+    const uname = document.getElementById('userUsername').value.trim();
+    const pass = document.getElementById('userPassword').value.trim();
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', uname)
+      .eq('password', pass)
+      .eq('role', 'user')
+      .single();
+    if (error || !data) {
+      Swal.fire('Login Gagal', 'Username atau password salah.', 'error');
+    } else {
+      Swal.fire({
+        icon: 'success',
+        title: `Selamat datang, ${uname}!`,
+        text: 'Halo User, selamat datang di aplikasi kami.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      localStorage.setItem('sessionUser', uname);
+      localStorage.setItem('sessionRole', 'user');
+      setTimeout(() => {
+        window.location.href = 'dashboard_user.html';
+      }, 2000);
+    }
+  }
+
+  async function loginAdmin(e) {
+    e.preventDefault();
+    const uname = document.getElementById('adminUsername').value.trim();
+    const pass = document.getElementById('adminPassword').value.trim();
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', uname)
+      .eq('password', pass)
+      .eq('role', 'admin')
+      .single();
+    if (error || !data) {
+      Swal.fire('Login Gagal', 'Username atau password salah.', 'error');
+    } else {
+      Swal.fire({
+        icon: 'success',
+        title: `Selamat datang, ${uname}!`,
+        text: 'Halo Admin, selamat datang di aplikasi kami.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      localStorage.setItem('sessionUser', uname);
+      localStorage.setItem('sessionRole', 'admin');
+      setTimeout(() => {
+        window.location.href = 'dashboard_admin.html';
+      }, 2000);
+    }
+  }
+</script>
+</body>
+</html>

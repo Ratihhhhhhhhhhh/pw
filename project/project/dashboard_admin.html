@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+      background-color: #f0f8ff;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .form-box {
+      margin: 0 auto 30px;
+      max-width: 400px;
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .button-group {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 8px 5px;
+      cursor: pointer;
+      background-color: #87CEEB;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #00bfff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #87CEEB;
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #e6f7ff;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 15px;
+      }
+
+      table, th, td {
+        font-size: 14px;
+      }
+
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+
+  <h2>Dashboard Admin</h2>
+
+  <div class="form-box">
+    <form id="itemForm">
+      <input type="text" id="itemName" placeholder="Nama Barang" required />
+      <input type="number" id="itemQty" placeholder="Jumlah" required />
+      <input type="number" id="itemPrice" placeholder="Harga Per item(Rp)" required />
+      <div class="button-group">
+        <button type="submit">Simpan</button>
+        <button type="button" onclick="updateItem()">Edit</button>
+        <button type="button" onclick="deleteItem()">Hapus</button>
+      </div>
+    </form>
+  </div>
+
+  <table id="itemTable">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Nama Barang</th>
+        <th>Jumlah</th>
+        <th>Harga Per item</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <br />
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://oluiadcgamtarvxglwvi.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdWlhZGNnYW10YXJ2eGdsd3ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5OTc5MDMsImV4cCI6MjA2NjU3MzkwM30.0wAayKThZxfboiKmidQskSRBMmqGJus5wJ1BrxUsPQU'
+    );
+
+    let selectedId = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const role = localStorage.getItem('sessionRole');
+      if (role !== 'admin') {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      loadItems();
+      document.getElementById('itemForm').addEventListener('submit', addItem);
+    });
+
+    async function loadItems() {
+      const { data, error } = await supabase.from('items').select('*');
+      const tbody = document.querySelector('#itemTable tbody');
+      tbody.innerHTML = '';
+
+      if (error) {
+        console.error('Gagal ambil data:', error);
+        tbody.innerHTML = '<tr><td colspan="4">Gagal memuat data.</td></tr>';
+        return;
+      }
+
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">Tidak ada data.</td></tr>';
+      } else {
+        data.forEach((item, i) => {
+          tbody.innerHTML += `
+            <tr onclick="selectItem(${item.id}, '${item.name}', ${item.qty}, ${item.price})">
+              <td>${i + 1}</td>
+              <td>${item.name}</td>
+              <td>${item.qty}</td>
+              <td>Rp${item.price.toLocaleString()}</td>
+            </tr>`;
+        });
+      }
+    }
+
+    function selectItem(id, name, qty, price) {
+      selectedId = id;
+      document.getElementById('itemName').value = name;
+      document.getElementById('itemQty').value = qty;
+      document.getElementById('itemPrice').value = price;
+    }
+
+    async function addItem(e) {
+      e.preventDefault();
+      const name = document.getElementById('itemName').value.trim();
+      const qty = parseInt(document.getElementById('itemQty').value.trim());
+      const price = parseInt(document.getElementById('itemPrice').value.trim());
+
+      if (!name || isNaN(qty) || isNaN(price)) return alert('Input tidak valid');
+
+      const { error } = await supabase.from('items').insert([{ name, qty, price }]);
+
+      if (error) {
+        alert('Gagal menambahkan data');
+        console.error(error);
+      } else {
+        resetForm();
+        loadItems();
+      }
+    }
+
+    async function updateItem() {
+      if (!selectedId) return alert('Klik baris dulu buat edit.');
+      const name = document.getElementById('itemName').value.trim();
+      const qty = parseInt(document.getElementById('itemQty').value.trim());
+      const price = parseInt(document.getElementById('itemPrice').value.trim());
+
+      const { error } = await supabase
+        .from('items')
+        .update({ name, qty, price })
+        .eq('id', selectedId);
+
+      if (error) {
+        alert('Gagal update data');
+        console.error(error);
+      } else {
+        resetForm();
+        loadItems();
+      }
+    }
+
+    async function deleteItem() {
+      if (!selectedId) return alert('Klik baris dulu buat hapus.');
+      if (!confirm('Yakin mau hapus barang ini?')) return;
+
+      const { error } = await supabase
+        .from('items')
+        .delete()
+        .eq('id', selectedId);
+
+      if (error) {
+        alert('Gagal hapus data');
+        console.error(error);
+      } else {
+        resetForm();
+        loadItems();
+      }
+    }
+
+    function resetForm() {
+      selectedId = null;
+      document.getElementById('itemForm').reset();
+    }
+
+    function logout() {
+      if (confirm('Yakin ingin logout?')) {
+        localStorage.clear();
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard User</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+      background-color: #f0f8ff;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    #searchInput {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background-color: #87CEEB;
+      color: white;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #87CEEB;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #00bfff;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <h2>Dashboard User</h2>
+
+  <input type="text" id="searchInput" placeholder="Cari barang..." oninput="filterTable()">
+
+  <table id="itemTable">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Nama Barang</th>
+        <th>Jumlah</th>
+        <th>Harga Per item</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://oluiadcgamtarvxglwvi.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9sdWlhZGNnYW10YXJ2eGdsd3ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5OTc5MDMsImV4cCI6MjA2NjU3MzkwM30.0wAayKThZxfboiKmidQskSRBMmqGJus5wJ1BrxUsPQU'
+    );
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const role = localStorage.getItem('sessionRole');
+      if (role !== 'user') {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      loadItems();
+    });
+
+    async function loadItems() {
+      const { data, error } = await supabase.from('items').select('*');
+      const tbody = document.querySelector('#itemTable tbody');
+      tbody.innerHTML = '';
+
+      if (error) {
+        console.error('Gagal ambil data:', error);
+        tbody.innerHTML = '<tr><td colspan="4">Gagal memuat data.</td></tr>';
+        return;
+      }
+
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">Tidak ada data.</td></tr>';
+      } else {
+        data.forEach((item, i) => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${item.name}</td>
+              <td>${item.qty}</td>
+              <td>Rp${item.price.toLocaleString()}</td>
+            </tr>`;
+        });
+      }
+    }
+
+    function filterTable() {
+      const keyword = document.getElementById('searchInput').value.toLowerCase();
+      const rows = document.querySelectorAll('#itemTable tbody tr');
+      rows.forEach(row => {
+        const name = row.children[1].innerText.toLowerCase();
+        row.style.display = name.includes(keyword) ? '' : 'none';
+      });
+    }
+
+    function logout() {
+      if (confirm('Yakin ingin logout?')) {
+        localStorage.clear();
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>
